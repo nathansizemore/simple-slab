@@ -6,4 +6,4 @@ description = "Simple slab allocator"
 repository = "https://github.com/nathansizemore/simple-slab"
 readme = "README.md"
 keywords = ["slab", "allocator"]
-license = "MPL 2.0"
+license = "MPL-2.0"

@@ -51,7 +51,7 @@ Nathan Sizemore, nathanrsizemore@gmail.com
 
 ## License
 
-simple-stream is available under the MPL-2.0 license. See the LICENSE file for more info.
+simple-slab is available under the MPL-2.0 license. See the LICENSE file for more info.
 
 
 [q]: https://travis-ci.org/nathansizemore/simple-slab
