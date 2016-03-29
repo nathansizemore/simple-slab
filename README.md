@@ -34,15 +34,8 @@ fn main() {
     }
 
     // Iteration
-    for opt in slab.iter() {
-        match opt {
-            Some(num) => {
-                // Stuff...
-            }
-            None => {
-                // Stuff...
-            }
-        }
+    for num in slab.iter() {
+        // Stuff..
     }
 
     // Removal
