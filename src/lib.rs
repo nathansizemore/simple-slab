@@ -85,6 +85,7 @@ impl<T> Slab<T> {
             self.allocate_exact(extra_mem);
         }
 
+        // Add new element
         self.buf[self.num_elems] = Some(elem);
 
         // Update counts
