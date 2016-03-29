@@ -1,4 +1,4 @@
-# simple-slab [<img src="https://travis-ci.org/nathansizemore/simple-slab.png?branch=master">][q]
+# simple-slab [<img src="https://travis-ci.org/nathansizemore/simple-slab.png?branch=develop">][q]
 
 simple-slab is a simple slab-allocator in Rust. It aims to be as minimal and fast as possible.
 
