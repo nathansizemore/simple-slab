@@ -1,0 +1,9 @@
+[package]
+name = "simple-slab"
+version = "0.1.0"
+authors = ["Nathan Sizemore <nathanrsizemore@gmail.com>"]
+description = "Simple slab allocator"
+repository = "https://github.com/nathansizemore/simple-slab"
+readme = "README.md"
+keywords = ["slab", "allocator"]
+license = "MPL 2.0"
