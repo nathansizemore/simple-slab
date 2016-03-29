@@ -6,17 +6,62 @@
 // http://mozilla.org/MPL/2.0/.
 
 
+//! simple_slab provides a fast, minimal, slab allocator.
+//! ## Usage
+//!
+//! ```no_run
+//! extern crate simple_slab;
+//!
+//! use simple_slab::Slab;
+//!
+//! fn main() {
+//!     const MAX_ELEMS: usize = 100000;
+//!
+//!     let mut slab = Slab::<u32>::new(MAX_ELEMS);
+//!
+//!     // Insertion
+//!     for num in 0..MAX_ELEMS {
+//!         slab.insert(num as u32);
+//!     }
+//!
+//!     // Traversal
+//!     for offset in 0..slab.len() {
+//!         match slab[offset] {
+//!             Some(num) => {
+//!                 // Stuff...
+//!             }
+//!             None => {
+//!                 // Stuff...
+//!             }
+//!         }
+//!     }
+//!
+//!     // Iteration
+//!     for num in slab.iter() {
+//!         // Stuff...
+//!     }
+//!
+//!     // Removal
+//!     for offset in 0..slab.len() {
+//!         let num = slab.remove(offset).unwrap();
+//!     }
+//! }
+//! ```
+
+
 use std::{mem, ops};
 use std::iter::{Iterator, IntoIterator};
 
 
 #[derive(Clone)]
+/// Pre-allocated chunk of memory sized specifically for `T`
 pub struct Slab<T> {
     num_elems: usize,
     buf: Vec<Option<T>>
 }
 
 impl<T> Slab<T> {
+    /// Creates a new Slab with initial room without re-allocation for `capacity` num elements.
     pub fn new(capacity: usize) -> Slab<T> {
         let mut buf = Vec::<Option<T>>::with_capacity(capacity);
         for _ in 0..capacity {
@@ -29,6 +74,10 @@ impl<T> Slab<T> {
         }
     }
 
+    /// Inserts a new element into the slab, re-allocating if neccessary.
+    ///
+    /// # Panics
+    /// Panics if re-allocation overflows `usize`.
     #[inline]
     pub fn insert(&mut self, elem: T) {
         if self.num_elems == self.buf.len() {
@@ -42,6 +91,10 @@ impl<T> Slab<T> {
         self.num_elems += 1;
     }
 
+    /// Remove the element at `offset`.
+    ///
+    /// # Panics
+    /// Panics if `offset` is out of bounds.
     #[inline]
     pub fn remove(&mut self, offset: usize) -> Option<T> {
         self.num_elems -= 1;
@@ -61,9 +114,27 @@ impl<T> Slab<T> {
         mem::replace(&mut self.buf[self.num_elems], None)
     }
 
+    /// Returns the number of elements in the slab.
     #[inline]
     pub fn len(&self) -> usize {
         self.num_elems
+    }
+
+    /// Returns an iterator over the slab.
+    #[inline]
+    pub fn iter(&self) -> SlabIter<T>  {
+        SlabIter {
+            slab: self,
+            current_offset: 0
+        }
+    }
+
+    /// Returns a mutable iterator over the slab
+    #[inline]
+    pub fn iter_mut(&mut self) -> SlabMutIter<T> {
+        SlabMutIter {
+            iter: self.iter()
+        }
     }
 
     #[inline]
@@ -74,21 +145,6 @@ impl<T> Slab<T> {
         // Fill the extra space with tombstones
         for _ in 0..size {
             self.buf.push(None);
-        }
-    }
-
-    #[inline]
-    pub fn iter(&self) -> SlabIter<T>  {
-        SlabIter {
-            slab: self,
-            current_offset: 0
-        }
-    }
-
-    #[inline]
-    pub fn iter_mut(&mut self) -> SlabMutIter<T> {
-        SlabMutIter {
-            iter: self.iter()
         }
     }
 }
