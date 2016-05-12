@@ -1,0 +1,10 @@
+[package]
+name = "bench"
+version = "0.1.0"
+authors = ["Nathan Sizemore <nathanrsizemore@gmail.com>"]
+
+[dependencies]
+time = "^0.1.35"
+rand = "^0.3.14"
+slab = "^0.2.0"
+simple-slab = { path = "../" }

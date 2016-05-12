@@ -17,7 +17,7 @@
 //! fn main() {
 //!     const MAX_ELEMS: usize = 100000;
 //!
-//!     let mut slab = Slab::<u32>::new(MAX_ELEMS);
+//!     let mut slab = Slab::<u32>::with_capacity(MAX_ELEMS);
 //!
 //!     // Insertion
 //!     for num in 0..MAX_ELEMS {
@@ -26,14 +26,7 @@
 //!
 //!     // Traversal
 //!     for offset in 0..slab.len() {
-//!         match slab[offset] {
-//!             Some(num) => {
-//!                 // Stuff...
-//!             }
-//!             None => {
-//!                 // Stuff...
-//!             }
-//!         }
+//!         slab[offset] = 33;
 //!     }
 //!
 //!     // Iteration
@@ -43,87 +36,103 @@
 //!
 //!     // Removal
 //!     for offset in 0..slab.len() {
-//!         let num = slab.remove(offset).unwrap();
+//!         let num = slab.remove(offset);
 //!     }
 //! }
 //! ```
 
+extern crate libc;
 
-use std::{mem, ops};
+
+use std::{mem, ptr, ops};
 use std::iter::{Iterator, IntoIterator};
 
 
-#[derive(Clone)]
-/// Pre-allocated chunk of memory sized specifically for `T`
 pub struct Slab<T> {
+    capacity: usize,
     num_elems: usize,
-    buf: Vec<Option<T>>
+    mem_ptr: *mut T
 }
 
 impl<T> Slab<T> {
-    /// Creates a new Slab with initial room without re-allocation for `capacity` num elements.
-    pub fn new(capacity: usize) -> Slab<T> {
-        let mut buf = Vec::<Option<T>>::with_capacity(capacity);
-        for _ in 0..capacity {
-            buf.push(None);
-        }
-
+    /// Creates a new, empty Slab
+    pub fn new() -> Slab<T> {
         Slab {
+            capacity: 0,
             num_elems: 0,
-            buf: buf
+            mem_ptr: ptr::null_mut()
+        }
+    }
+
+    /// Creates a new, empty Slab with room for `capacity` elems
+    ///
+    /// # Panics
+    ///
+    /// Panics if the host system is out of memory
+    pub fn with_capacity(capacity: usize) -> Slab<T> {
+        unsafe {
+            let maybe_ptr = libc::malloc((mem::size_of::<T>() * capacity)) as *mut T;
+
+            // malloc will return NULL if called with zero
+            if maybe_ptr.is_null() && capacity != 0 {
+                panic!("Unable to allocate requested capacity")
+            }
+
+            return Slab {
+                capacity: capacity,
+                num_elems: 0,
+                mem_ptr: maybe_ptr
+            }
         }
     }
 
     /// Inserts a new element into the slab, re-allocating if neccessary.
     ///
     /// # Panics
-    /// Panics if re-allocation overflows `usize`.
+    /// * If the host system is out of memory.
     #[inline]
     pub fn insert(&mut self, elem: T) {
-        if self.num_elems == self.buf.len() {
-            let extra_mem = self.num_elems * 2;
-            self.allocate_exact(extra_mem);
+        if self.num_elems == self.capacity {
+            self.reallocate();
         }
 
-        // Add new element
-        self.buf[self.num_elems] = Some(elem);
-
-        // Update counts
         self.num_elems += 1;
+        let next_elem_offset = self.num_elems as isize;
+        unsafe {
+            ptr::write(self.mem_ptr.offset(next_elem_offset), elem);
+        }
     }
 
-    /// Remove the element at `offset`.
+    /// Removes the element at `offset`.
     ///
     /// # Panics
-    /// Panics if `offset` is out of bounds.
+    ///
+    /// * If `offset` is out of bounds.
     #[inline]
-    pub fn remove(&mut self, offset: usize) -> Option<T> {
-        self.num_elems -= 1;
-
-        // Removal of only element
-        if self.num_elems == 0 {
-            return mem::replace(&mut self.buf[0], None);
+    pub fn remove(&mut self, offset: usize) -> T {
+        if offset >= self.num_elems {
+            panic!("Offset {} out of bounds for slab.len: {}", offset, self.num_elems)
         }
 
-        // Removal of last element in buf
-        if offset == self.num_elems {
-            return mem::replace(&mut self.buf[self.num_elems], None);
-        }
+        let last_elem_offset = (self.num_elems - 1) as isize;
+        let elem = unsafe {
+            let elem_ptr = self.mem_ptr.offset(offset as isize);
+            let last_elem_ptr = self.mem_ptr.offset(last_elem_offset);
+            mem::replace(&mut (*elem_ptr), ptr::read(last_elem_ptr))
+        };
 
-        // Removal of any other element
-        self.buf.swap(offset, self.num_elems);
-        mem::replace(&mut self.buf[self.num_elems], None)
+        return elem;
     }
 
-    /// Returns the number of elements in the slab.
+    /// Returns the number of elements in the slab
     #[inline]
     pub fn len(&self) -> usize {
         self.num_elems
     }
 
-    /// Returns an iterator over the slab.
+    /// Returns an iterator over the slab
     #[inline]
-    pub fn iter(&self) -> SlabIter<T>  {
+    pub fn iter(&self) -> SlabIter<T> {
         SlabIter {
             slab: self,
             current_offset: 0
@@ -138,34 +147,40 @@ impl<T> Slab<T> {
         }
     }
 
+    /// Reserves capacity * 2 extra space in this slab
+    ///
+    /// # Panics
+    ///
+    /// Panics if the host system is out of memory
     #[inline]
-    fn allocate_exact(&mut self, size: usize) {
-        // Allocate extra space inside buffer
-        self.buf.reserve_exact(size);
+    fn reallocate(&mut self) {
+        let new_capacity = self.capacity * 2;
+        unsafe {
+            let maybe_ptr = libc::realloc(self.mem_ptr as *mut libc::c_void,
+                                          (mem::size_of::<T>() * new_capacity)) as *mut T;
 
-        // Fill the extra space with tombstones
-        for _ in 0..size {
-            self.buf.push(None);
+            if maybe_ptr.is_null() {
+                panic!("Unable to allocate new capacity")
+            }
+
+            self.capacity = new_capacity;
+            self.mem_ptr = maybe_ptr;
         }
     }
 }
 
 impl<T> ops::Index<usize> for Slab<T> {
-    type Output = Option<T>;
+    type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
-        &(self.buf[index])
-    }
-}
-
-impl<T> ops::IndexMut<usize> for Slab<T> {
-    fn index_mut<'a>(&'a mut self, index: usize) -> &'a mut Option<T> {
-        &mut (self.buf[index])
+        unsafe {
+            &(*(self.mem_ptr.offset(index as isize)))
+        }
     }
 }
 
 pub struct SlabIter<'a, T: 'a> {
-    current_offset: usize,
-    slab: &'a Slab<T>
+    slab: &'a Slab<T>,
+    current_offset: usize
 }
 
 pub struct SlabMutIter<'a, T: 'a> {
@@ -176,16 +191,14 @@ impl<'a, T> Iterator for SlabIter<'a, T> {
     type Item = &'a T;
     fn next(&mut self) -> Option<&'a T> {
         while self.current_offset < self.slab.len() {
-            match self.slab.buf[self.current_offset] {
-                Some(ref elem) => {
-                    self.current_offset += 1;
-                    return Some(elem);
-                }
-                None => self.current_offset += 1
+            let offset = self.current_offset;
+            self.current_offset += 1;
+            unsafe {
+                return Some(&(*self.slab.mem_ptr.offset(offset as isize)));
             }
         }
 
-        None
+        return  None;
     }
 }
 
