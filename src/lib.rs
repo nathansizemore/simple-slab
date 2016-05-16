@@ -44,7 +44,8 @@
 extern crate libc;
 
 
-use std::{mem, ptr, ops};
+use std::{mem, ptr};
+use std::ops::{Drop, Index};
 use std::iter::{Iterator, IntoIterator};
 
 
@@ -52,6 +53,15 @@ pub struct Slab<T> {
     capacity: usize,
     num_elems: usize,
     mem_ptr: *mut T
+}
+
+pub struct SlabIter<'a, T: 'a> {
+    slab: &'a Slab<T>,
+    current_offset: usize
+}
+
+pub struct SlabMutIter<'a, T: 'a> {
+    iter: SlabIter<'a, T>
 }
 
 impl<T> Slab<T> {
@@ -169,22 +179,26 @@ impl<T> Slab<T> {
     }
 }
 
-impl<T> ops::Index<usize> for Slab<T> {
+impl<T> Drop for Slab<T> {
+    fn drop(&mut self) {
+        unsafe {
+            for x in 0..self.len() {
+                let elem_ptr = self.mem_ptr.offset(x as isize);
+                ptr::drop_in_place(elem_ptr);
+            }
+
+            libc::free(self.mem_ptr as *mut _ as *mut libc::c_void);
+        }
+    }
+}
+
+impl<T> Index<usize> for Slab<T> {
     type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
         unsafe {
             &(*(self.mem_ptr.offset(index as isize)))
         }
     }
-}
-
-pub struct SlabIter<'a, T: 'a> {
-    slab: &'a Slab<T>,
-    current_offset: usize
-}
-
-pub struct SlabMutIter<'a, T: 'a> {
-    iter: SlabIter<'a, T>
 }
 
 impl<'a, T> Iterator for SlabIter<'a, T> {
