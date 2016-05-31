@@ -105,12 +105,12 @@ impl<T> Slab<T> {
         if self.num_elems == self.capacity {
             self.reallocate();
         }
-
-        self.num_elems += 1;
+        
         let next_elem_offset = self.num_elems as isize;
         unsafe {
             ptr::write(self.mem_ptr.offset(next_elem_offset), elem);
         }
+        self.num_elems += 1;
     }
 
     /// Removes the element at `offset`.
@@ -164,7 +164,12 @@ impl<T> Slab<T> {
     /// Panics if the host system is out of memory
     #[inline]
     fn reallocate(&mut self) {
-        let new_capacity = self.capacity * 2;
+        let new_capacity = if self.capacity != 0 {
+            self.capacity * 2
+        } else {
+            1
+        };
+        
         unsafe {
             let maybe_ptr = libc::realloc(self.mem_ptr as *mut libc::c_void,
                                           (mem::size_of::<T>() * new_capacity)) as *mut T;
