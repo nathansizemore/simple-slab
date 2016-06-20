@@ -105,7 +105,7 @@ impl<T> Slab<T> {
         if self.num_elems == self.capacity {
             self.reallocate();
         }
-        
+
         let next_elem_offset = self.num_elems as isize;
         unsafe {
             ptr::write(self.mem_ptr.offset(next_elem_offset), elem);
@@ -130,6 +130,7 @@ impl<T> Slab<T> {
             let last_elem_ptr = self.mem_ptr.offset(last_elem_offset);
             mem::replace(&mut (*elem_ptr), ptr::read(last_elem_ptr))
         };
+        self.num_elems -= 1;
 
         return elem;
     }
@@ -169,7 +170,7 @@ impl<T> Slab<T> {
         } else {
             1
         };
-        
+
         unsafe {
             let maybe_ptr = libc::realloc(self.mem_ptr as *mut libc::c_void,
                                           (mem::size_of::<T>() * new_capacity)) as *mut T;
