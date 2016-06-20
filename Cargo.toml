@@ -9,4 +9,4 @@ keywords = ["slab", "allocator"]
 license = "MPL-2.0"
 
 [dependencies]
-libc = "^0.2.11"
+libc = "^0.2"
