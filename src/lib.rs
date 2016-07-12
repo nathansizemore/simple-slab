@@ -157,18 +157,17 @@ impl<T> Slab<T> {
     #[inline]
     fn reallocate(&mut self) {
         let new_capacity = if self.capacity != 0 { self.capacity * 2 } else { 1 };
+        let maybe_ptr = unsafe {
+            libc::realloc(self.mem_ptr as *mut libc::c_void,
+                          (mem::size_of::<T>() * new_capacity)) as *mut T
+        };
 
-        unsafe {
-            let maybe_ptr = libc::realloc(self.mem_ptr as *mut libc::c_void,
-                                          (mem::size_of::<T>() * new_capacity)) as *mut T;
-
-            if maybe_ptr.is_null() {
-                panic!("Unable to allocate new capacity")
-            }
-
-            self.capacity = new_capacity;
-            self.mem_ptr = maybe_ptr;
+        if maybe_ptr.is_null() {
+            panic!("Unable to allocate new capacity")
         }
+
+        self.capacity = new_capacity;
+        self.mem_ptr = maybe_ptr;
     }
 }
 
