@@ -80,19 +80,19 @@ impl<T> Slab<T> {
     ///
     /// Panics if the host system is out of memory
     pub fn with_capacity(capacity: usize) -> Slab<T> {
-        unsafe {
-            let maybe_ptr = libc::malloc((mem::size_of::<T>() * capacity)) as *mut T;
+        let maybe_ptr = unsafe {
+            libc::malloc((mem::size_of::<T>() * capacity)) as *mut T
+        };
 
-            // malloc will return NULL if called with zero
-            if maybe_ptr.is_null() && capacity != 0 {
-                panic!("Unable to allocate requested capacity")
-            }
+        // malloc will return NULL if called with zero
+        if maybe_ptr.is_null() && capacity != 0 {
+            panic!("Unable to allocate requested capacity")
+        }
 
-            return Slab {
-                capacity: capacity,
-                num_elems: 0,
-                mem_ptr: maybe_ptr
-            }
+        return Slab {
+            capacity: capacity,
+            num_elems: 0,
+            mem_ptr: maybe_ptr
         }
     }
 
