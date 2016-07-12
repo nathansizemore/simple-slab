@@ -124,6 +124,7 @@ impl<T> Slab<T> {
             let last_elem_ptr = self.mem_ptr.offset(last_elem_offset);
             mem::replace(&mut (*elem_ptr), ptr::read(last_elem_ptr))
         };
+
         self.num_elems -= 1;
 
         return elem;
@@ -131,9 +132,7 @@ impl<T> Slab<T> {
 
     /// Returns the number of elements in the slab
     #[inline]
-    pub fn len(&self) -> usize {
-        self.num_elems
-    }
+    pub fn len(&self) -> usize { self.num_elems }
 
     /// Returns an iterator over the slab
     #[inline]
@@ -147,9 +146,7 @@ impl<T> Slab<T> {
     /// Returns a mutable iterator over the slab
     #[inline]
     pub fn iter_mut(&mut self) -> SlabMutIter<T> {
-        SlabMutIter {
-            iter: self.iter()
-        }
+        SlabMutIter { iter: self.iter() }
     }
 
     /// Reserves capacity * 2 extra space in this slab
@@ -159,11 +156,7 @@ impl<T> Slab<T> {
     /// Panics if the host system is out of memory
     #[inline]
     fn reallocate(&mut self) {
-        let new_capacity = if self.capacity != 0 {
-            self.capacity * 2
-        } else {
-            1
-        };
+        let new_capacity = if self.capacity != 0 { self.capacity * 2 } else { 1 };
 
         unsafe {
             let maybe_ptr = libc::realloc(self.mem_ptr as *mut libc::c_void,
