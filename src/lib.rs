@@ -65,14 +65,8 @@ pub struct SlabMutIter<'a, T: 'a> {
 }
 
 impl<T> Slab<T> {
-    /// Creates a new, empty Slab
-    pub fn new() -> Slab<T> {
-        Slab {
-            capacity: 0,
-            num_elems: 0,
-            mem_ptr: ptr::null_mut()
-        }
-    }
+    /// Creates a new Slab
+    pub fn new() -> Slab<T> { Slab::with_capacity(1) }
 
     /// Creates a new, empty Slab with room for `capacity` elems
     ///
