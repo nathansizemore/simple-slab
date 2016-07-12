@@ -204,7 +204,7 @@ impl<'a, T> Iterator for SlabIter<'a, T> {
             }
         }
 
-        return  None;
+        None
     }
 }
 
