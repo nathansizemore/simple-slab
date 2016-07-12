@@ -173,14 +173,14 @@ impl<T> Slab<T> {
 
 impl<T> Drop for Slab<T> {
     fn drop(&mut self) {
-        unsafe {
-            for x in 0..self.len() {
+        for x in 0..self.len() {
+            unsafe {
                 let elem_ptr = self.mem_ptr.offset(x as isize);
                 ptr::drop_in_place(elem_ptr);
             }
-
-            libc::free(self.mem_ptr as *mut _ as *mut libc::c_void);
         }
+
+        unsafe { libc::free(self.mem_ptr as *mut _ as *mut libc::c_void) };
     }
 }
 
