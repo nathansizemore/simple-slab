@@ -244,6 +244,3 @@ impl<'a, T> IntoIterator for &'a mut Slab<T> {
         self.iter_mut()
     }
 }
-
-unsafe impl<T: Send> Send for Slab<T> {}
-unsafe impl<T: Sync> Sync for Slab<T> {}
