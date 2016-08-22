@@ -24,11 +24,6 @@
 //!         slab.insert(num as u32);
 //!     }
 //!
-//!     // Traversal
-//!     for offset in 0..slab.len() {
-//!         slab[offset] = 33;
-//!     }
-//!
 //!     // Iteration
 //!     for num in slab.iter() {
 //!         // Stuff...
