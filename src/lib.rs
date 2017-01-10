@@ -63,17 +63,13 @@ impl<T> Slab<T> {
     /// * If the host system is out of memory.
     #[inline]
     pub fn insert(&mut self, elem: T) {
-        if self.len == self.capacity {
-            self.reallocate();
+        if self.len == self.capacity { self.reallocate(); }
+
+        unsafe {
+            let ptr = self.mem.offset(self.len as isize);
+            ptr::write(ptr, elem);
         }
 
-        // let offset = self.len as isize;
-        // let ptr = unsafe { self.mem.offset(offset) };
-        // unsafe { ptr::write(ptr, elem) };
-        let next_elem_offset = self.len as isize;
-        unsafe {
-            ptr::write(self.mem.offset(next_elem_offset), elem);
-        }
         self.len += 1;
     }
 
