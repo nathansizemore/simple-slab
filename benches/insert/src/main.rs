@@ -19,7 +19,7 @@ struct BenchResult {
     nanos: u32
 }
 
-const NUM_ELEMS: usize = 1000000;
+const NUM_ELEMS: usize = 100000000;
 
 
 fn main() {

@@ -18,8 +18,8 @@ use std::iter::{Iterator, IntoIterator};
 
 pub struct Slab<T> {
     capacity: usize,
-    num_elems: usize,
-    mem_ptr: *mut T
+    len: usize,
+    mem: *mut T
 }
 
 pub struct SlabIter<'a, T: 'a> {
@@ -52,8 +52,8 @@ impl<T> Slab<T> {
 
         return Slab {
             capacity: capacity,
-            num_elems: 0,
-            mem_ptr: maybe_ptr
+            len: 0,
+            mem: maybe_ptr
         }
     }
 
@@ -63,15 +63,18 @@ impl<T> Slab<T> {
     /// * If the host system is out of memory.
     #[inline]
     pub fn insert(&mut self, elem: T) {
-        if self.num_elems == self.capacity {
+        if self.len == self.capacity {
             self.reallocate();
         }
 
-        let next_elem_offset = self.num_elems as isize;
+        // let offset = self.len as isize;
+        // let ptr = unsafe { self.mem.offset(offset) };
+        // unsafe { ptr::write(ptr, elem) };
+        let next_elem_offset = self.len as isize;
         unsafe {
-            ptr::write(self.mem_ptr.offset(next_elem_offset), elem);
+            ptr::write(self.mem.offset(next_elem_offset), elem);
         }
-        self.num_elems += 1;
+        self.len += 1;
     }
 
     /// Removes the element at `offset`.
@@ -81,25 +84,25 @@ impl<T> Slab<T> {
     /// * If `offset` is out of bounds.
     #[inline]
     pub fn remove(&mut self, offset: usize) -> T {
-        if offset >= self.num_elems {
-            panic!("Offset {} out of bounds for slab.len: {}", offset, self.num_elems)
+        if offset >= self.len {
+            panic!("Offset {} out of bounds for slab.len: {}", offset, self.len)
         }
 
-        let last_elem_offset = (self.num_elems - 1) as isize;
+        let last_elem_offset = (self.len - 1) as isize;
         let elem = unsafe {
-            let elem_ptr = self.mem_ptr.offset(offset as isize);
-            let last_elem_ptr = self.mem_ptr.offset(last_elem_offset);
+            let elem_ptr = self.mem.offset(offset as isize);
+            let last_elem_ptr = self.mem.offset(last_elem_offset);
             mem::replace(&mut (*elem_ptr), ptr::read(last_elem_ptr))
         };
 
-        self.num_elems -= 1;
+        self.len -= 1;
 
         return elem;
     }
 
     /// Returns the number of elements in the slab
     #[inline]
-    pub fn len(&self) -> usize { self.num_elems }
+    pub fn len(&self) -> usize { self.len }
 
     /// Returns an iterator over the slab
     #[inline]
@@ -125,7 +128,7 @@ impl<T> Slab<T> {
     fn reallocate(&mut self) {
         let new_capacity = if self.capacity != 0 { self.capacity * 2 } else { 1 };
         let maybe_ptr = unsafe {
-            libc::realloc(self.mem_ptr as *mut libc::c_void,
+            libc::realloc(self.mem as *mut libc::c_void,
                           (mem::size_of::<T>() * new_capacity)) as *mut T
         };
 
@@ -134,7 +137,7 @@ impl<T> Slab<T> {
         }
 
         self.capacity = new_capacity;
-        self.mem_ptr = maybe_ptr;
+        self.mem = maybe_ptr;
     }
 }
 
@@ -142,12 +145,12 @@ impl<T> Drop for Slab<T> {
     fn drop(&mut self) {
         for x in 0..self.len() {
             unsafe {
-                let elem_ptr = self.mem_ptr.offset(x as isize);
+                let elem_ptr = self.mem.offset(x as isize);
                 ptr::drop_in_place(elem_ptr);
             }
         }
 
-        unsafe { libc::free(self.mem_ptr as *mut _ as *mut libc::c_void) };
+        unsafe { libc::free(self.mem as *mut _ as *mut libc::c_void) };
     }
 }
 
@@ -155,7 +158,7 @@ impl<T> Index<usize> for Slab<T> {
     type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
         unsafe {
-            &(*(self.mem_ptr.offset(index as isize)))
+            &(*(self.mem.offset(index as isize)))
         }
     }
 }
@@ -167,7 +170,7 @@ impl<'a, T> Iterator for SlabIter<'a, T> {
             let offset = self.current_offset;
             self.current_offset += 1;
             unsafe {
-                return Some(&(*self.slab.mem_ptr.offset(offset as isize)));
+                return Some(&(*self.slab.mem.offset(offset as isize)));
             }
         }
 
