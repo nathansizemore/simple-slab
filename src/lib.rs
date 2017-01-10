@@ -1,40 +1,12 @@
 // Copyright 2016 Nathan Sizemore <nathanrsizemore@gmail.com>
 //
-// This Source Code Form is subject to the terms of the
-// Mozilla Public License, v. 2.0. If a copy of the MPL was not
-// distributed with this file, You can obtain one at
-// http://mozilla.org/MPL/2.0/.
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this file,
+// You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
-//! simple_slab provides a fast, minimal, slab allocator.
-//! ## Usage
-//!
-//! ```no_run
-//! extern crate simple_slab;
-//!
-//! use simple_slab::Slab;
-//!
-//! fn main() {
-//!     const MAX_ELEMS: usize = 100000;
-//!
-//!     let mut slab = Slab::<u32>::with_capacity(MAX_ELEMS);
-//!
-//!     // Insertion
-//!     for num in 0..MAX_ELEMS {
-//!         slab.insert(num as u32);
-//!     }
-//!
-//!     // Iteration
-//!     for num in slab.iter() {
-//!         // Stuff...
-//!     }
-//!
-//!     // Removal
-//!     for offset in 0..slab.len() {
-//!         let num = slab.remove(offset);
-//!     }
-//! }
-//! ```
+//! Fast and lightweight Slab Allocator.
+
 
 extern crate libc;
 

@@ -1,0 +1,8 @@
+[package]
+name = "insert"
+version = "0.1.0"
+authors = ["Nathan Sizemore <nathanrsizemore@gmail.com>"]
+
+[dependencies]
+slab="^0.3"
+simple-slab = { path="../../" }

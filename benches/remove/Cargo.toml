@@ -1,0 +1,9 @@
+[package]
+name = "remove"
+version = "0.1.0"
+authors = ["Nathan Sizemore <nathanrsizemore@gmail.com>"]
+
+[dependencies]
+rand="^0.3"
+slab="^0.3"
+simple-slab = { path="../../" }
