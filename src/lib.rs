@@ -80,19 +80,26 @@ impl<T> Slab<T> {
     /// * If `offset` is out of bounds.
     #[inline]
     pub fn remove(&mut self, offset: usize) -> T {
-        if offset >= self.len {
-            panic!("Offset {} out of bounds for slab.len: {}", offset, self.len)
+        assert!(offset < self.len, "Offset out of bounds");
+
+        let elem: T;
+        let last_elem: T;
+        let elem_ptr: *mut T;
+        let last_elem_ptr: *mut T;
+
+        unsafe {
+            elem_ptr = self.mem.offset(offset as isize);
+            last_elem_ptr = self.mem.offset(self.len as isize);
+
+            elem = ptr::read(elem_ptr);
+            last_elem = ptr::read(last_elem_ptr);
+
+            ptr::write(elem_ptr, last_elem);
+
+            // ptr::swap(elem_ptr, last_elem_ptr);
         }
 
-        let last_elem_offset = (self.len - 1) as isize;
-        let elem = unsafe {
-            let elem_ptr = self.mem.offset(offset as isize);
-            let last_elem_ptr = self.mem.offset(last_elem_offset);
-            mem::replace(&mut (*elem_ptr), ptr::read(last_elem_ptr))
-        };
-
         self.len -= 1;
-
         return elem;
     }
 
