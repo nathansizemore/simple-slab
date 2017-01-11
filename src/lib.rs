@@ -137,7 +137,7 @@ impl<T> Slab<T> {
                           (mem::size_of::<T>() * new_capacity)) as *mut T
         };
 
-        assert!(maybe_ptr.is_null(), "Out of Memory");
+        assert!(!maybe_ptr.is_null(), "Out of Memory");
 
         self.capacity = new_capacity;
         self.mem = maybe_ptr;
