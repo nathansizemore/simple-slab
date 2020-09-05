@@ -1,6 +1,6 @@
 [package]
 name = "simple-slab"
-version = "0.3.2"
+version = "0.3.3"
 authors = ["Nathan Sizemore <nathanrsizemore@gmail.com>"]
 description = "Fast and lightweight Slab Allocator."
 repository = "https://github.com/nathansizemore/simple-slab"

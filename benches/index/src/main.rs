@@ -85,7 +85,7 @@ fn vec_get_unchecked(find_list: &Vec<usize>, results: &mut Vec<BenchResult>) {
 }
 
 fn slab_get(find_list: &Vec<usize>, results: &mut Vec<BenchResult>) {
-    let mut buf = slab::Slab::<usize, usize>::with_capacity(NUM_ELEMS);
+    let mut buf = slab::Slab::<usize>::with_capacity(NUM_ELEMS);
     for x in 0..NUM_ELEMS {
         let _ = buf.insert(x);
     }

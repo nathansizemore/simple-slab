@@ -4,36 +4,34 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this file,
 // You can obtain one at http://mozilla.org/MPL/2.0/.
 
-
 //! Fast and lightweight Slab Allocator.
-
 
 extern crate libc;
 
-
-use std::{mem, ptr};
+use std::iter::{IntoIterator, Iterator};
 use std::ops::{Drop, Index};
-use std::iter::{Iterator, IntoIterator};
-
+use std::{mem, ptr};
 
 pub struct Slab<T> {
     capacity: usize,
     len: usize,
-    mem: *mut T
+    mem: *mut T,
 }
 
 pub struct SlabIter<'a, T: 'a> {
     slab: &'a Slab<T>,
-    current_offset: usize
+    current_offset: usize,
 }
 
 pub struct SlabMutIter<'a, T: 'a> {
-    iter: SlabIter<'a, T>
+    iter: SlabIter<'a, T>,
 }
 
 impl<T> Slab<T> {
     /// Creates a new Slab
-    pub fn new() -> Slab<T> { Slab::with_capacity(1) }
+    pub fn new() -> Slab<T> {
+        Slab::with_capacity(1)
+    }
 
     /// Creates a new, empty Slab with room for `capacity` elems
     ///
@@ -41,9 +39,8 @@ impl<T> Slab<T> {
     ///
     /// * If the host system is out of memory
     pub fn with_capacity(capacity: usize) -> Slab<T> {
-        let maybe_ptr = unsafe {
-            libc::malloc((mem::size_of::<T>() * capacity)) as *mut T
-        };
+        let maybe_ptr =
+            unsafe { libc::malloc(mem::size_of::<T>() * capacity) as *mut T };
 
         // malloc will return NULL if called with zero
         if maybe_ptr.is_null() && capacity != 0 {
@@ -53,8 +50,8 @@ impl<T> Slab<T> {
         return Slab {
             capacity: capacity,
             len: 0,
-            mem: maybe_ptr
-        }
+            mem: maybe_ptr,
+        };
     }
 
     /// Inserts a new element into the slab, re-allocating if neccessary.
@@ -64,7 +61,9 @@ impl<T> Slab<T> {
     /// * If the host system is out of memory.
     #[inline]
     pub fn insert(&mut self, elem: T) {
-        if self.len == self.capacity { self.reallocate(); }
+        if self.len == self.capacity {
+            self.reallocate();
+        }
 
         unsafe {
             let ptr = self.mem.offset(self.len as isize);
@@ -90,7 +89,7 @@ impl<T> Slab<T> {
 
         unsafe {
             elem_ptr = self.mem.offset(offset as isize);
-            last_elem_ptr = self.mem.offset(self.len as isize);
+            last_elem_ptr = self.mem.offset((self.len - 1) as isize);
 
             elem = ptr::read(elem_ptr);
             last_elem = ptr::read(last_elem_ptr);
@@ -104,14 +103,16 @@ impl<T> Slab<T> {
 
     /// Returns the number of elements in the slab
     #[inline]
-    pub fn len(&self) -> usize { self.len }
+    pub fn len(&self) -> usize {
+        self.len
+    }
 
     /// Returns an iterator over the slab
     #[inline]
     pub fn iter(&self) -> SlabIter<T> {
         SlabIter {
             slab: self,
-            current_offset: 0
+            current_offset: 0,
         }
     }
 
@@ -130,11 +131,15 @@ impl<T> Slab<T> {
     fn reallocate(&mut self) {
         let new_capacity = if self.capacity != 0 {
             self.capacity * 2
-        } else { 1 };
+        } else {
+            1
+        };
 
         let maybe_ptr = unsafe {
-            libc::realloc(self.mem as *mut libc::c_void,
-                          (mem::size_of::<T>() * new_capacity)) as *mut T
+            libc::realloc(
+                self.mem as *mut libc::c_void,
+                mem::size_of::<T>() * new_capacity,
+            ) as *mut T
         };
 
         assert!(!maybe_ptr.is_null(), "Out of Memory");
@@ -160,6 +165,7 @@ impl<T> Drop for Slab<T> {
 impl<T> Index<usize> for Slab<T> {
     type Output = T;
     fn index(&self, index: usize) -> &Self::Output {
+        assert!(index < self.len, "Index out of bounds");
         unsafe { &(*(self.mem.offset(index as isize))) }
     }
 }
@@ -189,11 +195,15 @@ impl<'a, T> Iterator for SlabMutIter<'a, T> {
 impl<'a, T> IntoIterator for &'a Slab<T> {
     type Item = &'a T;
     type IntoIter = SlabIter<'a, T>;
-    fn into_iter(self) -> SlabIter<'a, T> { self.iter() }
+    fn into_iter(self) -> SlabIter<'a, T> {
+        self.iter()
+    }
 }
 
 impl<'a, T> IntoIterator for &'a mut Slab<T> {
     type Item = &'a mut T;
     type IntoIter = SlabMutIter<'a, T>;
-    fn into_iter(self) -> SlabMutIter<'a, T> { self.iter_mut() }
+    fn into_iter(self) -> SlabMutIter<'a, T> {
+        self.iter_mut()
+    }
 }

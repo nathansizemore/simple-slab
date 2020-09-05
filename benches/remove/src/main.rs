@@ -57,9 +57,9 @@ fn vec_swap_remove(results: &mut Vec<BenchResult>) {
 
 fn slab_remove(results: &mut Vec<BenchResult>) {
     let mut offsets = Vec::<usize>::new();
-    let mut buf = slab::Slab::<u64, usize>::with_capacity(NUM_ELEMS);
+    let mut buf = slab::Slab::<u64>::with_capacity(NUM_ELEMS);
     for x in 0..NUM_ELEMS as u64 {
-        let offset = buf.insert(x).unwrap();
+        let offset = buf.insert(x);
         offsets.push(offset);
     }
 
@@ -68,7 +68,7 @@ fn slab_remove(results: &mut Vec<BenchResult>) {
         let offset_index = rand::thread_rng()
             .gen_range::<usize>(0, offsets.len());
         let offset = offsets.swap_remove(offset_index);
-        buf.remove(offset).unwrap();
+        buf.remove(offset);
     }
     let duration = start.elapsed();
 

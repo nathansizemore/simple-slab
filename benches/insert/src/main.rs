@@ -68,7 +68,7 @@ fn insert_vec_with_capacity_push(results: &mut Vec<BenchResult>) {
 }
 
 fn insert_slab_insert(results: &mut Vec<BenchResult>) {
-    let mut buf = slab::Slab::<u64, usize>::with_capacity(NUM_ELEMS);
+    let mut buf = slab::Slab::<u64>::with_capacity(NUM_ELEMS);
 
     let start = Instant::now();
     for x in 0..NUM_ELEMS as u64 {

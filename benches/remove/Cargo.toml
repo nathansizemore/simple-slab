@@ -5,5 +5,5 @@ authors = ["Nathan Sizemore <nathanrsizemore@gmail.com>"]
 
 [dependencies]
 rand="^0.3"
-slab="^0.3"
+slab="^0.4"
 simple-slab = { path="../../" }
